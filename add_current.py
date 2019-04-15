@@ -23,22 +23,19 @@ class AddSongTool:
         playlistresponse = spotify_instance.user_playlists('krachbumm3nte')
         self.playlist_dict = dict()
 
-        self.listcontainer = tk.Frame(master=root, bg=backgroundcolor)
-        self.listcontainer.pack()
+        self.listcontainer = tk.Listbox(master=root, bg=backgroundcolor, selectmode='multiple', fg=textcolor, height=36, exportselection=0)
+        self.listcontainer.pack(expand=1, fill=tk.BOTH, padx=5)
         self.listcontainer.bind(sequence=key_escape, func=sys.exit)
         self.listcontainer.focus_force()
+
         # create the list of buttons representing each playlist, displayed in the main window
         for item in playlistresponse["items"]:
+            if item['owner']['display_name'] == user:
 
-            name = item["name"]
-            playlist_id = item["id"]
-            self.playlist_dict[name] = playlist_id
-            var = tk.IntVar()
-            button = tk.Checkbutton(master=self.listcontainer, text=name, anchor="w", fg=textcolor, bg=backgroundcolor,
-                                    indicatoron=False, variable=var, activeforeground=selected_text_color)
-            button.configure(width=window_width, font=("Helvetica", 11))
-            button.pack()
-            self.buttonlist[button] = var
+                name = item["name"]
+                playlist_id = item["id"]
+                self.playlist_dict[name] = playlist_id
+                self.listcontainer.insert(tk.END, name)
 
         # creating the Frame that holds the confirmation query for adding to a playlist
         self.continuequery, self.query_label = continue_query(querytext='', master=root, cancel_func=self.returnToList,
@@ -53,7 +50,7 @@ class AddSongTool:
 
     def add_current_song_to_seleted(self, event=None):
         for list_name in self.selectedplaylists:
-            print(self.spotify_instance._auth)
+            print(f'adding Song to {list_name}')
             self.spotify_instance.user_playlist_add_tracks(user, self.playlist_dict[list_name], [self.song_id])
         sys.exit()
 
@@ -61,14 +58,13 @@ class AddSongTool:
         self.selectedplaylists.clear()
         self.duplicatelists.clear()
 
-        for b, var in self.buttonlist.items():
-            if var.get() == 1:
-                name = b["text"]
-                if self.playlistcontainstrack(pl_id=self.playlist_dict[name], t_id=self.song_id,
-                                              spotify_instance=self.spotify_instance):
-                    self.duplicatelists.append(name)
-                else:
-                    self.selectedplaylists.append(name)
+        for index in self.listcontainer.curselection():
+            name=self.listcontainer.get(index)
+            if self.playlistcontainstrack(pl_id=self.playlist_dict[name], t_id=self.song_id,
+                                          spotify_instance=self.spotify_instance):
+                self.duplicatelists.append(name)
+            else:
+                self.selectedplaylists.append(name)
 
         self.query_label.configure(text=self.format_query_string())
         self.continuequery.pack()
@@ -76,7 +72,7 @@ class AddSongTool:
 
     def returnToList(self, event=None):
         self.continuequery.pack_forget()
-        self.listcontainer.pack()
+        self.listcontainer.pack(expand=1, fill=tk.BOTH, padx=5)
         self.listcontainer.focus_force()
 
     def playlistcontainstrack(self, pl_id, t_id, spotify_instance):

@@ -28,7 +28,6 @@ if __name__ == '__main__':
         """)
         sys.exit()
 
-
     # set up tkinter Window + root Frame
     window = adder_utils.prepare_window(title='spotify tool')
     window.withdraw()
@@ -55,16 +54,16 @@ if __name__ == '__main__':
         if file.startswith(".cache-"):
             config.user = file[file.find('-') + 1:]
             user_logged_in = True
-            print('found user cache')
+            print(f'found user cache for {config.user}')
             break
 
     if not user_logged_in:
         config.user = adder_utils.ask_username()
-        if user is None or user == '':
+        print(config.user)
+        if config.user is None or config.user == '':
             sys.exit()
-
     # retrieve authorization token for current user
-    token = adder_utils.prompt_for_user_token(username=user, access_scope=scope, client_id=c_id, client_secret=c_secret,
+    token = adder_utils.prompt_for_user_token(username=config.user, access_scope=scope, client_id=c_id, client_secret=c_secret,
                                               redirect_uri=redirect)
     if not token:
         print('no token')
@@ -72,13 +71,12 @@ if __name__ == '__main__':
     # create connection to the Spotify API
     sp = spotipy.Spotify(auth=token)
     sp.trace = False
-    print(sp._auth)
 
     currently_playing = sp.current_user_playing_track()
 
     # check if the connected user is currently playing anything
     if currently_playing is None:
-        tk.messagebox.showerror(title="Not currently Playing", message=f"{user} is not currently playing music "
+        tk.messagebox.showerror(title="Not currently Playing", message=f"{config.user} is not currently playing music "
                                                                        f"through Spotify")
         sys.exit()
 
@@ -86,6 +84,7 @@ if __name__ == '__main__':
     song_name = currently_playing["item"]["name"]  # current songs title
     artist_name = currently_playing["item"]["artists"][0]["name"]  # display the first artist, if multiple are present
     cover_image_url = currently_playing["item"]["album"]["images"][0]["url"]  # album cover url
+    print(f'currently playing {song_name} by {artist_name}')
 
     # display album cover and song information atop the root Frame
     adder_utils.pack_song_info(master=root, imageurl=cover_image_url, songname=song_name, artist=artist_name)
@@ -100,12 +99,12 @@ if __name__ == '__main__':
             sys.exit()
 
         list_id = currently_playing['context']['uri']
-        list_name = sp.user_playlist(user=user, playlist_id=list_id)['name']
+        list_name = sp.user_playlist(user=config.user, playlist_id=list_id)['name']
 
         # abort procedure if current playlist does not belong to user
-        if currently_playing['context']['uri'].split(':')[2] != user:
+        if currently_playing['context']['uri'].split(':')[2] != config.user:
             tk.messagebox.showerror(title='Not your playlist!',
-                                    message=f'The Playlist {list_name} does not belong to {user}')
+                                    message=f'The Playlist {list_name} does not belong to {config.user}')
             sys.exit()
 
         removetool(master=root, list_id=list_id, list_name=list_name, song_id=song_id, spotipy_instance=sp)
