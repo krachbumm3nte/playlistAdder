@@ -18,15 +18,6 @@ def ask_username():
     return tk.simpledialog.askstring(title='Enter Username', prompt='Enter your Spotify Username:')
 
 
-# Prepare a tkinter Window used to display the app in
-def prepare_window(title):
-    window = tk.Tk()
-    window.title(title)
-    window.wm_attributes("-topmost", 1)
-    window.focus_force()
-    return window
-
-
 def continue_query(querytext, master, cancel_func, continue_func):
     query_frame = tk.Frame(master=master, bg=backgroundcolor, width=window_width, pady=25)
     info_label = tk.Label(master=query_frame, text=querytext, justify="left", anchor="w",

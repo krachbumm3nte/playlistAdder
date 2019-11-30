@@ -1,10 +1,8 @@
 import glob
 import os
 import sys
-import tkinter
 import tkinter as tk
-from tkinter import messagebox
-
+import argparse
 import spotipy
 from config import *
 import adder_utils
@@ -12,30 +10,41 @@ import config
 import add_current
 from remove_current import removetool
 
+
+def prepare_window():
+    """
+    Prepare a tkinter Window for the app and set relevant parameters
+    :return:
+    """
+    window = tk.Tk()
+    window.title('spotify tool')
+    window.geometry(f"+0+0")
+    print(window.winfo_screenmmheight())
+    window.wm_attributes("-topmost", 1)
+    window.focus_force()
+    window.resizable(False, True)
+    return window
+
+
 if __name__ == '__main__':
 
-    arg = sys.argv[1]
-    # arg not in ['-r', '-a', '-u'] or len(sys.argv) != 0:
-    if False:
-        # messagebox.showerror(title='Error!', message='wrong number of arguments')
+    parser = argparse.ArgumentParser()
+    modeselect = parser.add_mutually_exclusive_group()
 
-        print("""
-        Tis program takes one and only one argument:
-            -r      removes the currently playing song from the current playlist
-            -a      opens a window to add the current song to one of the users playlists
-            -u      removes the users stored information (requires a login upon next start)
-        
-        """)
-        sys.exit()
+    modeselect.add_argument('-r', '--remove', action='store_true', help='removes the playing song from the current playback environment')
+    modeselect.add_argument('-a', '--add', action='store_true', help='opens a selection window to add the current song to one of the user\'s playlists')
+    modeselect.add_argument('-u', '--unlink', action='store_true', help='unlinks the current account from this application')
+
+    args = parser.parse_args()
 
     # set up tkinter Window + root Frame
-    window = adder_utils.prepare_window(title='spotify tool')
+    window = prepare_window()
     window.withdraw()
 
-    root = tkinter.Frame(window, width=window_width, height=800, bg=backgroundcolor)
+    root = tk.Frame(window, width=window_width, height=800, bg=backgroundcolor)
     root.pack()
 
-    if arg == '-u':
+    if args.unlink:
         """
         This Option will Reset The users cached information and all Spotify api tokens and then prompt for a 
         new user login.
@@ -82,17 +91,22 @@ if __name__ == '__main__':
 
     song_id = currently_playing["item"]["id"]  # current songs spotify id
     song_name = currently_playing["item"]["name"]  # current songs title
-    artist_name = currently_playing["item"]["artists"][0]["name"]  # display the first artist, if multiple are present
+    artist_names = [x["name"] for x in currently_playing["item"]["artists"]]
+    artist_names = ','.join([x for x in artist_names])
+
     cover_image_url = currently_playing["item"]["album"]["images"][0]["url"]  # album cover url
-    print(f'currently playing {song_name} by {artist_name}')
+    print(f'currently playing {song_name} by {artist_names}')
 
     # display album cover and song information atop the root Frame
-    adder_utils.pack_song_info(master=root, imageurl=cover_image_url, songname=song_name, artist=artist_name)
+    adder_utils.pack_song_info(master=root, imageurl=cover_image_url, songname=song_name, artist=artist_names)
 
-    if arg == '-r':
+    if args.remove:
         """
         This tool removes the currently playing song from the current playlist.
         """
+
+        window.title('remove current song')
+
         # abort procedure, if not currently playing from inside a playlist (e.g. when playing from artist or album)
         if currently_playing["context"]["type"] != 'playlist':
             tk.messagebox.showerror(title='Wrong Playback Context!', message='not currently playing from a playlist')
@@ -109,14 +123,17 @@ if __name__ == '__main__':
 
         removetool(master=root, list_id=list_id, list_name=list_name, song_id=song_id, spotipy_instance=sp)
 
-    if arg == '-a':
+    elif args.add:
         """
         This tool opens a selection window of the users playlists, from wich he can select the ones he wants to
         add the currently playing song to.
         the Window can be used by mouse or by the keys defined in config.py
         """
+
+        window.title('add current song to playlists')
+
         add_current.AddSongTool(window=window, root=root, spotify_instance=sp, song_id=song_id,
-                                songname=song_name, artist=artist_name)
+                                songname=song_name, artist=artist_names)
 
 
     # Display the window and begin waiting for keyboard inputs

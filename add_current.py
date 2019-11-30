@@ -58,7 +58,12 @@ class AddSongTool:
         self.selectedplaylists.clear()
         self.duplicatelists.clear()
 
-        for index in self.listcontainer.curselection():
+        selection = self.listcontainer.curselection()
+
+        if len(selection) == 0:
+            return
+
+        for index in selection:
             name=self.listcontainer.get(index)
             if self.playlistcontainstrack(pl_id=self.playlist_dict[name], t_id=self.song_id,
                                           spotify_instance=self.spotify_instance):
@@ -77,8 +82,8 @@ class AddSongTool:
 
     def playlistcontainstrack(self, pl_id, t_id, spotify_instance):
         listresponse = spotify_instance.user_playlist(user, pl_id)
-        for track in listresponse['tracks']['items']:
-            if track['track']['id'] == t_id:
+        for item in listresponse['tracks']['items']:
+            if item['track']['id'] == t_id:
                 return True
         return False
 
@@ -91,20 +96,18 @@ class AddSongTool:
         if selected_count == 0:
             if duplicate_count == 0:
                 return
-            elif duplicate_count == 1:
-                querytext += f"{self.duplicatelists[0]} already contains {self.songname}!"
             else:
-                querytext += 'all playlists already contain this song.'
+                querytext += 'all selected playlists already contain this song.'
         self.listcontainer.pack_forget()
 
         if selected_count > 0:
-            querytext += "will be added to the following playlist" + (
-                's' if len(self.selectedplaylists) > 0 else str) + ":\n"
+            querytext += "will be added to the following playlists:\n"
             for n in self.selectedplaylists:
                 querytext += f"\t {n}\n"
+
             if len(self.duplicatelists) > 0:
                 querytext += f"the current song is already contained in:\n"
-            for n in self.duplicatelists:
-                querytext += f"\t {n}\n"
+                for n in self.duplicatelists:
+                    querytext += f"\t {n}\n"
 
         return querytext

@@ -1,5 +1,5 @@
 # appearance
-window_width = 35
+window_width = 350
 image_size = 300
 backgroundcolor = 'grey'
 textcolor = 'white'
